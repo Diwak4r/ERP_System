@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Factory ERP{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Admin Dashboard</h2>
+        <p class="text-muted">Factory Production Management System</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_workers }}</h4>
+                        <p class="mb-0">Total Workers</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_sections }}</h4>
+                        <p class="mb-0">Sections</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-industry fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ pending_requisitions }}</h4>
+                        <p class="mb-0">Pending Requisitions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ production_summary.total_actual }}</h4>
+                        <p class="mb-0">Today's Production</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Production Chart -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Production Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="productionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Today's Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-3">
+                        <h3 class="text-primary">{{ production_summary.total_target }}</h3>
+                        <p class="mb-0">Target</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <h3 class="{% if production_summary.total_actual >= production_summary.total_target %}text-success{% else %}text-danger{% endif %}">
+                            {{ production_summary.total_actual }}
+                        </h3>
+                        <p class="mb-0">Actual</p>
+                    </div>
+                    <div class="col-12">
+                        <h3 class="text-warning">{{ "%.1f"|format(production_summary.total_wastage) }}kg</h3>
+                        <p class="mb-0">Wastage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Requisitions -->
+{% if pending_reqs %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Pending Requisitions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-excel table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item</th>
+                                <th>Section</th>
+                                <th>Quantity</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in pending_reqs %}
+                            <tr>
+                                <td>{{ req.id }}</td>
+                                <td>{{ req.item.name if req.item else 'N/A' }}</td>
+                                <td>{{ req.section.name if req.section else 'N/A' }}</td>
+                                <td>{{ req.quantity }}</td>
+                                <td>{{ req.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-success me-1" onclick="approveRequisition({{ req.id }}, 'approve')">
+                                        Approve
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="approveRequisition({{ req.id }}, 'reject')">
+                                        Reject
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Reports Section -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Downtime</h5>
+            </div>
+            <div class="card-body">
+                <div id="downtimeList">
+                    <p class="text-muted">Loading downtime data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Material Flow Status</h5>
+            </div>
+            <div class="card-body">
+                <div id="materialFlowStatus">
+                    <p class="text-muted">Loading material flow data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary w-100" onclick="loadAttendanceReport()">
+                            <i class="fas fa-calendar-check me-2"></i>Attendance Report
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-success w-100" onclick="loadProductionReport()">
+                            <i class="fas fa-chart-bar me-2"></i>Production Report
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-warning w-100" onclick="loadDowntimeReport()">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Downtime Report
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="loadMaterialFlowReport()">
+                            <i class="fas fa-exchange-alt me-2"></i>Material Flow
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadDowntimeData();
+    loadMaterialFlowData();
+});
+
+function loadDowntimeData() {
+    fetch('/api/reports/downtime')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const downtimeList = document.getElementById('downtimeList');
+                if (data.data.length === 0) {
+                    downtimeList.innerHTML = '<p class="text-muted">No recent downtime records.</p>';
+                } else {
+                    let html = '<div class="list-group">';
+                    data.data.slice(0, 5).forEach(record => {
+                        const alertClass = record.is_long ? 'list-group-item-danger' : 'list-group-item-warning';
+                        html += `
+                            <div class="list-group-item ${alertClass}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${record.machine}</h6>
+                                    <small>${record.duration_hours}h</small>
+                                </div>
+                                <p class="mb-1">${record.remarks || 'No remarks'}</p>
+                                <small>Started: ${new Date(record.start_time).toLocaleString()}</small>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    downtimeList.innerHTML = html;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading downtime data:', error);
+            document.getElementById('downtimeList').innerHTML = '<p class="text-danger">Error loading data.</p>';
+        });
+}
+
+function loadMaterialFlowData() {
+    fetch('/api/reports/material_flow')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const materialFlowStatus = document.getElementById('materialFlowStatus');
+                if (data.data.length === 0) {
+                    materialFlowStatus.innerHTML = '<p class="text-muted">No material flow data available.</p>';
+                } else {
+                    let html = '<div class="list-group">';
+                    data.data.forEach(flow => {
+                        const alertClass = flow.has_issue ? 'list-group-item-danger' : 'list-group-item-success';
+                        html += `
+                            <div class="list-group-item ${alertClass}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${flow.from_section} → ${flow.to_section}</h6>
+                                    <small>${flow.discrepancy > 0 ? '+' : ''}${flow.discrepancy.toFixed(2)}kg</small>
+                                </div>
+                                <p class="mb-1">Output: ${flow.output}kg | Input: ${flow.input}kg</p>
+                                ${flow.has_issue ? '<small class="text-danger">⚠️ Discrepancy detected</small>' : '<small class="text-success">✓ Flow balanced</small>'}
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    materialFlowStatus.innerHTML = html;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading material flow data:', error);
+            document.getElementById('materialFlowStatus').innerHTML = '<p class="text-danger">Error loading data.</p>';
+        });
+}
+
+function loadAttendanceReport() {
+    fetch('/api/reports/attendance')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let report = 'Attendance Report:\n\n';
+                data.data.forEach(item => {
+                    report += `${item.section}: ${item.present} workers present\n`;
+                });
+                alert(report);
+            }
+        })
+        .catch(error => console.error('Error loading attendance report:', error));
+}
+
+function loadProductionReport() {
+    // This would open a detailed production report modal or page
+    alert('Production report functionality would be implemented here.');
+}
+
+function loadDowntimeReport() {
+    // This would open a detailed downtime report modal or page
+    alert('Downtime report functionality would be implemented here.');
+}
+
+function loadMaterialFlowReport() {
+    // This would open a detailed material flow report modal or page
+    alert('Material flow report functionality would be implemented here.');
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - Factory ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Staff Dashboard - {{ section.name if section else 'Unknown Section' }}</h2>
+        <p class="text-muted">Welcome, {{ session.user.email }}! Enter your daily production data below.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Production Entry -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Production Entry</h5>
+            </div>
+            <div class="card-body">
+                <form id="productionForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="worker_id" class="form-label">Worker</label>
+                            <select class="form-select" id="worker_id" name="worker_id" required>
+                                <option value="">Select Worker</option>
+                                {% for worker in workers %}
+                                <option value="{{ worker.id }}">{{ worker.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="item_id" class="form-label">Item</label>
+                            <select class="form-select" id="item_id" name="item_id" required onchange="updateTarget()">
+                                <option value="">Select Item</option>
+                                {% for item in items %}
+                                <option value="{{ item.id }}" data-target="{{ item.default_target }}" data-unit="{{ item.unit }}">{{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ date.today() }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="target" class="form-label">Target</label>
+                            <input type="number" class="form-control" id="target" name="target" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="actual" class="form-label">Actual Production</label>
+                            <input type="number" class="form-control" id="actual" name="actual" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="overtime_hours" class="form-label">Overtime Hours</label>
+                            <input type="number" class="form-control" id="overtime_hours" name="overtime_hours" step="0.01" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="input_material" class="form-label">Input Material (kg)</label>
+                            <input type="number" class="form-control" id="input_material" name="input_material" step="0.01" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="output_material" class="form-label">Output Material (kg)</label>
+                            <input type="number" class="form-control" id="output_material" name="output_material" step="0.01" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="wastage" class="form-label">Wastage (kg)</label>
+                            <input type="number" class="form-control" id="wastage" name="wastage" step="0.01" readonly>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Production Data</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attendance Entry -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Attendance Entry</h5>
+            </div>
+            <div class="card-body">
+                <form id="attendanceForm">
+                    <div class="mb-3">
+                        <label for="attendance_date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="attendance_date" name="date" value="{{ date.today() }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Present Workers</label>
+                        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                            {% for worker in workers %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="workers" value="{{ worker.id }}" id="worker_{{ worker.id }}">
+                                <label class="form-check-label" for="worker_{{ worker.id }}">
+                                    {{ worker.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">Save Attendance</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Machine Downtime -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Machine Downtime</h5>
+            </div>
+            <div class="card-body">
+                <form id="downtimeForm">
+                    <div class="mb-3">
+                        <label for="machine_name" class="form-label">Machine</label>
+                        <select class="form-select" id="machine_name" name="machine_name" required>
+                            <option value="">Select Machine</option>
+                            <option value="Machine1">Machine 1</option>
+                            <option value="Machine2">Machine 2</option>
+                            <option value="Machine3">Machine 3</option>
+                            <option value="Packaging Unit">Packaging Unit</option>
+                            <option value="Quality Control">Quality Control</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_time" class="form-label">End Time</label>
+                            <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="Describe the issue or maintenance work..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning">Record Downtime</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Store Requisition -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Store Requisition</h5>
+            </div>
+            <div class="card-body">
+                <form id="requisitionForm">
+                    <div class="mb-3">
+                        <label for="req_item_id" class="form-label">Item</label>
+                        <select class="form-select" id="req_item_id" name="item_id" required>
+                            <option value="">Select Item</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}">{{ item.name }} ({{ item.unit }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-info">Submit Requisition</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTarget() {
+    const itemSelect = document.getElementById('item_id');
+    const targetInput = document.getElementById('target');
+    
+    if (itemSelect.value) {
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        const target = selectedOption.getAttribute('data-target');
+        targetInput.value = target;
+    } else {
+        targetInput.value = '';
+    }
+}
+
+// Set default datetime for downtime form
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('start_time').value = localDateTime;
+});
+</script>
+{% endblock %}
+
