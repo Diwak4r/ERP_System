@@ -39,7 +39,13 @@ def login():
         
         result = login_user(email, password)
         if result['success']:
-            session['user'] = result['user']
+            # Store only serializable user data in session
+            user = result['user']
+            session['user'] = {
+                'email': user.email,
+                'id': user.id,
+                'user_metadata': user.user_metadata
+            }
             session['role'] = result['role']
             session['token'] = result['session'].access_token if result['session'] else None
             
@@ -67,7 +73,7 @@ def staff_dashboard():
     db = get_db()
     
     # Get user's section
-    user_section_id = session['user'].user_metadata.get('section_id', 1)
+    user_section_id = session['user'].get('user_metadata', {}).get('section_id', 1)
     
     # Get workers in user's section
     workers = db.query(Worker).filter(Worker.section_id == user_section_id).all()
@@ -81,7 +87,9 @@ def staff_dashboard():
     return render_template('staff_dashboard.html', 
                          workers=workers, 
                          items=items, 
-                         section=section)
+                         section=section,
+                         date=date,
+                         datetime=datetime)
 
 @app.route("/admin")
 def admin_dashboard():
@@ -114,7 +122,9 @@ def admin_dashboard():
                          total_sections=total_sections,
                          pending_requisitions=pending_requisitions,
                          production_summary=production_summary,
-                         pending_reqs=pending_reqs)
+                         pending_reqs=pending_reqs,
+                         date=date,
+                         datetime=datetime)
 
 # API Routes
 

@@ -89,11 +89,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 # Determine database URL based on environment variables
-if SUPABASE_URL and SUPABASE_KEY:
+USE_LOCAL_DB = os.getenv("USE_LOCAL_DB", "false").lower() == "true"
+
+if USE_LOCAL_DB:
+    # Use local SQLite database for testing
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./local_test.db")
+elif SUPABASE_URL and SUPABASE_KEY and SUPABASE_URL != "your_supabase_url_here":
     DATABASE_URL = f"postgresql://postgres:{SUPABASE_KEY}@{SUPABASE_URL.split('//')[1]}/postgres"
 else:
     # Fallback to SQLite for local development/testing if Supabase env vars are not set
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+    DATABASE_URL = "sqlite:///./local_test.db"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
