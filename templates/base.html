@@ -52,7 +52,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
                 <i class="bi bi-building"></i> Factory ERP
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -60,10 +60,10 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    {% if current_user.is_authenticated %}
+                    {% if session.user %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> {{ current_user.name }}
+                            <i class="bi bi-person-circle"></i> {{ session.user.email }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#">Profile</a></li>
@@ -80,31 +80,37 @@
     <!-- Main Content -->
     <div class="container-fluid">
         <div class="row">
-            {% if current_user.is_authenticated %}
+            {% if session.user %}
             <!-- Sidebar -->
             <nav class="col-md-2 sidebar py-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                        {% if session.role == 'admin' %}
+                        <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
+                        {% else %}
+                        <a class="nav-link {% if request.endpoint == 'staff_dashboard' %}active{% endif %}" href="{{ url_for('staff_dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                        {% endif %}
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'production' %}active{% endif %}" href="{{ url_for('production') }}">
+                        <a class="nav-link" href="#">
                             <i class="bi bi-gear"></i> Production
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'attendance' %}active{% endif %}" href="{{ url_for('attendance') }}">
+                        <a class="nav-link" href="#">
                             <i class="bi bi-people"></i> Attendance
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}" href="{{ url_for('reports') }}">
+                        <a class="nav-link" href="#">
                             <i class="bi bi-file-text"></i> Reports
                         </a>
                     </li>
-                    {% if current_user.is_admin() %}
+                    {% if session.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="#">
                             <i class="bi bi-gear-fill"></i> Settings
